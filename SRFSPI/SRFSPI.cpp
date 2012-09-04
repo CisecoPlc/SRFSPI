@@ -1,4 +1,10 @@
 /*
+
+SRFSPI.cpp
+Arduino SPI library for SRF radio device
+
+(c)2012 IOT Research Ltd.
+
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -120,13 +126,14 @@ void SRFSPI::startTransfer()
     return;
   }
   bTransfering = 1;	// say we are transfering
-  interrupts();
   SPItransfer();
+  interrupts();
 }
 
 void SRFSPI::SPItransfer()
 {
-  uint8_t c;
+  uint8_t c,d;
+  uint8_t FEflag;
 
   digitalWrite(SRFSELECTPIN,LOW);
   while (bTransfering)
@@ -136,27 +143,43 @@ void SRFSPI::SPItransfer()
     {
       c = txBuffer[txTail++];
       txTail %= TXBUFFERSIZE;
+	  if ((c & 0xFE) == 0xFE) FEflag=1;
     }
     else c = 0xFF;
 
-    c = SPI.transfer(c);	// exchange a byte
-
-    if (c != (uint8_t)0xFF)
-    {
-      if ((rxHead - rxTail) %  RXBUFFERSIZE < RXBUFFERSIZE-1)
-      {
-        rxBuffer[rxHead++] = c;
-        rxHead %= RXBUFFERSIZE;
-
-      }	
-
-    }
+	if (FEflag)
+	{
+		d = SPI.transfer(0xFE);	// send FE flag
+		processReceivedChar(d);
+		FEflag=0;
+	}
+    d = SPI.transfer(c);	// exchange a byte
+    processReceivedChar(d);
     if (txHead == txTail && digitalRead(3) == 0) // nothing left to do
     {
       bTransfering = 0;	// say we have done
       digitalWrite(SRFSELECTPIN,HIGH);
     }
   }
+}
+
+void SRFSPI::processReceivedChar(uint8_t c)
+{
+	static uint8_t FErxflag=0;
+	//Serial.print(c,HEX);
+	if (FErxflag || (c != (uint8_t)0xFF))
+	{
+		if (!FErxflag && c == (uint8_t)0xFE)
+		{
+			FErxflag = 1;
+		}
+		else if ((rxHead - rxTail) %  RXBUFFERSIZE < RXBUFFERSIZE-1)
+		{
+			rxBuffer[rxHead++] = c;
+			rxHead %= RXBUFFERSIZE;
+			FErxflag = 0;
+		}	
+	}
 }
 
 void handle_interrupt()

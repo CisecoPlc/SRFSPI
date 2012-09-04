@@ -1,8 +1,12 @@
 /*
-SRFSPI.h
-Arduino SPI library for SRF radio device
+
+SPI_TEST example
+for the Arduino SPI library for SRF radio device
 
 (c)2012 IOT Research Ltd.
+
+
+This example acts as a Serial to SPI translator sending everything received on Serial to SPI and vice versa.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -23,56 +27,25 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-// SRFSPI.h
-
-#ifndef _SRFSPI_h
-#define _SRFSPI_h
-
-#if defined(ARDUINO) && ARDUINO >= 100
-#include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
 #include <SPI.h>
+#include <SRFSPI.h>
 
-#define INTERRUPT 1
-#define SRFSELECTPIN 10
-
-#define RXBUFFERSIZE 64
-#define TXBUFFERSIZE 12
-
-class SRFSPI : 
-public Stream
+void setup()
 {
-private:
-  volatile uint8_t rxHead;
-  uint8_t rxTail;
-  uint8_t rxBuffer[RXBUFFERSIZE];
-  uint8_t txHead;
-  volatile uint8_t txTail;
-  uint8_t txBuffer[TXBUFFERSIZE];
+  Serial.begin(115200);
+  SRF.init();
+  Serial.println("Started");
+}
 
-  void processReceivedChar(uint8_t c);
-
-
-  //void SPItransfer();
-public:
-  void init();
-  int available();
-  int read();
-  int peek();
-  void flush();
-  size_t write(uint8_t);
-  size_t write(const uint8_t *buffer, size_t size);
-
-  // public only for easy access by interrupt handlers
-  void startTransfer();
-  void SPItransfer();
-  uint8_t bTransfering;
-};
-
-extern SRFSPI SRF;
-
-#endif
-
+void loop()
+{
+  if (SRF.available())
+  {
+    Serial.write((uint8_t)SRF.read());
+  }
+  if (Serial.available())
+  {
+    SRF.write((uint8_t)Serial.read());
+  }
+}
 

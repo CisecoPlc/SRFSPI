@@ -1,10 +1,6 @@
 /*
 
 SPI_TEST example
-for the Arduino SPI library for SRF radio device
-
-(c)2012 IOT Research Ltd.
-
 
 This example acts as a Serial to SPI translator sending everything received on Serial to SPI and vice versa.
 

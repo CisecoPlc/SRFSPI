@@ -1,9 +1,4 @@
 /*
-SRFSPI.h
-Arduino SPI library for SRF radio device
-
-(c)2012 IOT Research Ltd.
-
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -35,8 +30,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #include <SPI.h>
 
-#define INTERRUPT 1
-#define SRFSELECTPIN 10
+#define SPI_SS 10
 
 #define RXBUFFERSIZE 64
 #define TXBUFFERSIZE 12
@@ -45,6 +39,8 @@ class SRFSPI :
 public Stream
 {
 private:
+  uint8_t _csPin;
+  uint8_t _irqPin;
   volatile uint8_t rxHead;
   uint8_t rxTail;
   uint8_t rxBuffer[RXBUFFERSIZE];
@@ -57,7 +53,7 @@ private:
 
   //void SPItransfer();
 public:
-  void init();
+  void init(uint8_t csPin =9,uint8_t irqPin =2);
   int available();
   int read();
   int peek();

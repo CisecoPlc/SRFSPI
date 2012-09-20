@@ -1,10 +1,4 @@
 /*
-
-SRFSPI.cpp
-Arduino SPI library for SRF radio device
-
-(c)2012 IOT Research Ltd.
-
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -27,27 +21,31 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // 
 // 
 // 
-#include <avr/interrupt.h>
+#include <avr/_interrupt.h>
 
 #include "SRFSPI.h"
 
 SRFSPI SRF;
-void handle_interrupt();
+void handleInterrupt();
 
-void SRFSPI::init()
+void SRFSPI::init(uint8_t csPin,uint8_t irqPin)
 {
+  _csPin = csPin;
+  _irqPin = irqPin;
   // setup SPI
-  pinMode(SRFSELECTPIN,OUTPUT);
-  digitalWrite(SRFSELECTPIN,HIGH);
-  pinMode(3,INPUT);
-  digitalWrite(3,LOW);	//disable pullup as we use an external pulldown
+  pinMode(SPI_SS,OUTPUT);
+  digitalWrite(SPI_SS,HIGH);
+  pinMode(_csPin,OUTPUT);
+  digitalWrite(_csPin,HIGH);
+  pinMode(_irqPin,INPUT);
+  digitalWrite(_irqPin,LOW);	//disable pullup as we use an external pulldown
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV32);
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE0);
   rxHead = rxTail = txHead = txTail = bTransfering = 0;
   startTransfer();	// get anything waiting for us
-  attachInterrupt(INTERRUPT, handle_interrupt, RISING);
+  attachInterrupt((irqPin == 3)?1:0, handleInterrupt, RISING);
 }
 
 int SRFSPI::available()
@@ -135,7 +133,7 @@ void SRFSPI::SPItransfer()
   uint8_t c,d;
   uint8_t FEflag;
 
-  digitalWrite(SRFSELECTPIN,LOW);
+  digitalWrite(_csPin,LOW);
   while (bTransfering)
   {
     // do we have anything to send?
@@ -155,10 +153,10 @@ void SRFSPI::SPItransfer()
 	}
     d = SPI.transfer(c);	// exchange a byte
     processReceivedChar(d);
-    if (txHead == txTail && digitalRead(3) == 0) // nothing left to do
+    if (txHead == txTail && digitalRead(_irqPin) == 0) // nothing left to do
     {
       bTransfering = 0;	// say we have done
-      digitalWrite(SRFSELECTPIN,HIGH);
+      digitalWrite(_csPin,HIGH);
     }
   }
 }
@@ -182,7 +180,7 @@ void SRFSPI::processReceivedChar(uint8_t c)
 	}
 }
 
-void handle_interrupt()
+void handleInterrupt()
 {
   if (!SRF.bTransfering)
   {
@@ -195,7 +193,7 @@ void handle_interrupt()
 #if defined(SPI_STC_vect)
  ISR(SPI_STC_vect)
  {
- SRFSPI::handle_interrupt();
+ SRFSPI::handleInterrupt();
  }
  #endif
  */
